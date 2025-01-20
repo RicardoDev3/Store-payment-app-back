@@ -4,13 +4,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { databaseConfig } from './config/database.config';
-import { Product } from './domain/entities/product.entity';
-import { Transaction } from './domain/entities/transaction.entity';
+import { ProductsModule } from './modules/products.module';
+import { TransactionModule } from './modules/transaction.module';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot(databaseConfig),
-    TypeOrmModule.forFeature([Product, Transaction]),
+    TransactionModule,
+    ProductsModule
   ],
   controllers: [AppController],
   providers: [AppService],

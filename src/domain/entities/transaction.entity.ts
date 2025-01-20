@@ -1,22 +1,31 @@
 /* eslint-disable prettier/prettier */
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable } from 'typeorm';
 import { Product } from './product.entity';
 
 @Entity('transactions')
 export class Transaction {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @ManyToOne(() => Product)
-  @JoinColumn({ name: 'product_id' })
-  product: Product;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
-  status: string;
+  customerName: string;
 
-  @Column('decimal', { precision: 10, scale: 2 })
-  amount: number;
+  @Column()
+  customerEmail: string;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column('decimal')
+  totalAmount: number;
+
+  @Column()
+  status: 'PENDING' | 'COMPLETED' | 'FAILED';
+
+  @ManyToMany(() => Product)
+  @JoinTable()
+  products: Product[];
+
+  @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

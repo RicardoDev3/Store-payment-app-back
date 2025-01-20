@@ -11,6 +11,12 @@ async function bootstrap() {
   
   await seedProducts(dataSource);
 
+  app.enableCors({
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  });
+
   await app.listen(3000);
   console.log('Application is running on: http://localhost:3000');
 }
