@@ -7,6 +7,7 @@ import { Product } from 'src/domain/entities/product.entity';
 import { Transaction } from 'src/domain/entities/transaction.entity';
 import { In, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class CreateTransactionUseCase {
@@ -25,7 +26,15 @@ export class CreateTransactionUseCase {
   ) {}
 
   async createTransaction(payload: any) {
-    const { customerName, customerEmail, productIds, cardToken } = payload;
+    const {
+      customerName,
+      customerEmail,
+      productIds,
+      cardToken,
+      acceptance_token,
+      accept_personal_auth,
+    } = payload;
+    const integrityKey = 'stagtest_integrity_nAIBuqayW70XpUqJS4qf4STYiISd89Fp';
 
     console.log('Product IDs:', productIds);
     const products = await this.productRepository.find({
@@ -45,25 +54,38 @@ export class CreateTransactionUseCase {
     const amountInCents = totalAmount * 100; // Convierte a centavos
 
     // Genera un código de referencia único para la transacción
-    const referenceCode = `order-${Date.now()}-${uuidv4()}`;
-    console.log('reference',referenceCode)
+    const referenceCode = `order-${Date.now()}`;
+    const currency = 'COP'
+    const stringToSign = `${amountInCents}|${currency}|${referenceCode}`;
+
+    // Generar la firma (signature)
+    const signature = crypto
+      .createHmac('sha256', integrityKey)
+      .update(stringToSign)
+      .digest('hex');
+    console.log('String to sign:', stringToSign);
+    console.log(signature)
     try {
       // Crea la transacción en Wompi
       const response = await axios.post(
         this.WompiApiUrl,
         {
+          acceptance_token: acceptance_token,
+          accept_personal_auth: accept_personal_auth,
           customer_name: customerName,
           customer_email: customerEmail,
           amount_in_cents: amountInCents,
           currency: 'COP',
           payment_method: {
             type: 'CARD',
-            token: cardToken, // Este token debe ser generado y enviado desde el frontend
+            installments: 1,
+            token: cardToken,
           },
-          reference_code: referenceCode,
+          reference: referenceCode,
+          signature: signature,
           redirect_url: 'http://localhost:5173/',
           extra_data: {
-            product_ids: productIds, // Enviar todos los IDs de productos asociados
+            product_ids: productIds,
           },
         },
         {
@@ -93,7 +115,7 @@ export class CreateTransactionUseCase {
     } catch (error) {
       console.error(
         'Error creating transaction with Wompi:',
-        error.response?.data
+        error.response?.data,
       );
       throw new Error('Transaction creation failed');
     }
